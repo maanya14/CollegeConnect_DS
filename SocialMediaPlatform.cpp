@@ -1,8 +1,6 @@
 #include "SocialMediaPlatform.h"
 #include <iostream>
 #include <vector>
-using namespace std;
-
 
 // User Class Implementation
 User::User(const string &uname, const string &pwd, const string &email, const string &bio, bool isPublic)
@@ -355,7 +353,7 @@ void FriendSystem::addFriend(User *user, User *friendUser)
     friends[user].push_back(friendUser);
 }
 
-void FriendSystem::viewFriends(User *user)
+bool FriendSystem::viewFriends(User *user)
 {
     auto it = friends.find(user);
     if (it != friends.end())
@@ -364,10 +362,11 @@ void FriendSystem::viewFriends(User *user)
         {
             cout << friendUser->getUsername() << endl;
         }
+        return true;
     }
     else
     {
-        cout << "No friends found!" << endl;
+        return false;
     }
 }
 
@@ -377,27 +376,184 @@ map<User *, list<User *>> FriendSystem::getFriendsList()
 }
 
 // MessagingSystem Class Implementation
-void MessagingSystem::sendMessage(User *fromUser, User *toUser, const string &message)
+
+void MessagingSystem::sendMessage(User *fromUser, User *toUser, const std::string &message)
 {
-    userMessages[toUser].push(fromUser->getUsername() + ": " + message);
+    // Store the new message in the userMessages queue for the recipient
+    userMessages[toUser].emplace(fromUser, message);
+
+    // Archive the message in both users' chat histories
+    chatHistory[fromUser].append(fromUser, toUser, message); // Archive from sender's perspective
+    chatHistory[toUser].append(fromUser, toUser, message);   // Archive from recipient's perspective
 }
 
-void MessagingSystem::viewMessages(User *user)
+void MessagingSystem::viewNewMessages(User *user)
 {
     auto it = userMessages.find(user);
-    if (it != userMessages.end())
+    if (it != userMessages.end() && !it->second.empty())
     {
+        std::cout << "New messages for " << user->getUsername() << ":\n";
         while (!it->second.empty())
         {
-            cout << it->second.front() << endl;
+            auto messagePair = it->second.front();
+            User *sender = messagePair.first;
+            std::string message = messagePair.second;
+
+            std::cout << "From " << sender->getUsername() << ": " << message << std::endl;
             it->second.pop();
         }
     }
     else
     {
-        cout << "No messages found!" << endl;
+        std::cout << "No new messages found for " << user->getUsername() << "!" << std::endl;
     }
 }
+
+void MessagingSystem::viewChatHistory(User *recipient, User *friendUser)
+{
+    std::cout << "Chat history between " << recipient->getUsername()
+              << " and " << friendUser->getUsername() << ":\n";
+
+    // Retrieve chat history for the recipient
+    auto recipientIt = chatHistory.find(recipient);
+    if (recipientIt != chatHistory.end())
+    {
+        recipientIt->second.display(recipient, friendUser);
+    }
+
+    // If no messages found, indicate it
+    if (recipientIt == chatHistory.end())
+    {
+        std::cout << "No chat history found between " << recipient->getUsername()
+                  << " and " << friendUser->getUsername() << "!" << std::endl;
+    }
+}
+
+// // Function to send a message to a group
+// void sendMessageToGroup(User *currentUser, MessagingSystem &messagingSystem)
+// {
+//     std::string groupId;
+//     std::cout << "Enter the Group ID: ";
+//     std::cin >> groupId;
+
+//     std::string message;
+//     std::cout << "Enter your message: ";
+//     std::cin.ignore();
+//     std::getline(std::cin, message);
+
+//     messagingSystem.sendMessageToGroup(currentUser, groupId, message);
+//     std::cout << "Message sent to group " << groupId << "!" << std::endl;
+// }
+// void joinGroup(User *currentUser, MessagingSystem &messagingSystem)
+// {
+//     std::cout << "Available Groups:\n";
+//     const auto &groups = messagingSystem.getGroups(); // Access groups through the accessor
+//     for (const auto &groupPair : groups)
+//     {
+//         const Group &group = groupPair.second;
+//         std::cout << "Group ID: " << group.groupId << ", Name: " << group.groupName << std::endl;
+//     }
+
+//     std::string groupId;
+//     std::cout << "Enter the Group ID to join: ";
+//     std::cin >> groupId;
+
+//     // Use the new method to add user to group
+//     messagingSystem.addUserToGroup(groupId, currentUser);
+// }
+
+// // Function to create a group
+// void createGroup(User *currentUser, UserManagement &userManagement, FriendSystem &friendSystem, MessagingSystem &messagingSystem)
+// {
+//     bool uHaveFriend = friendSystem.viewFriends(currentUser);
+//     if (!uHaveFriend)
+//     {
+//         std::cout << "You need at least one friend to create a group!" << std::endl;
+//         return; // Exit if no friends are available
+//     }
+
+//     std::string groupName;
+//     std::cout << "\nEnter the group name: ";
+//     std::cin.ignore();
+//     std::getline(std::cin, groupName); // Allow spaces in group name
+
+//     std::string groupId = "G" + std::to_string(messagingSystem.getGroups().size() + 1); // Unique group ID
+
+//     std::set<User *> participants;
+//     participants.insert(currentUser); // Add the creator as the first participant
+
+//     char addMore;
+//     do
+//     {
+//         std::string friendUsername;
+//         std::cout << "Enter the username of a friend to add to the group: ";
+//         std::cin >> friendUsername;
+
+//         User *friendUser = userManagement.findUserByUsername(friendUsername);
+//         if (friendUser && friendUser != currentUser)
+//         {
+//             participants.insert(friendUser);
+//             std::cout << friendUsername << " has been added to the group!" << std::endl;
+//         }
+//         else
+//         {
+//             std::cout << "Invalid username or you cannot add yourself!" << std::endl;
+//         }
+
+//         std::cout << "Do you want to add another friend? (y/n): ";
+//         std::cin >> addMore;
+//     } while (addMore == 'y' || addMore == 'Y');
+
+//     messagingSystem.createGroup(groupId, groupName, participants);
+//     std::cout << "Group \"" << groupName << "\" created successfully with Group ID: " << groupId << std::endl;
+// }
+
+// // Function to leave a group
+// void leaveGroup(User *currentUser, MessagingSystem &messagingSystem)
+// {
+//     std::string groupId;
+//     std::cout << "Enter the Group ID to leave: ";
+//     std::cin >> groupId;
+
+//     const auto &groups = messagingSystem.getGroups(); // Access groups through the accessor
+//     auto it = groups.find(groupId);
+//     if (it != groups.end())
+//     {
+//         // Use const_cast to cast away constness to allow modification
+//         Group &group = const_cast<Group &>(it->second); // Cast to non-const reference
+//         if (!group.isUserInGroup(currentUser))
+//         {
+//             std::cout << "You are not a member of this group!" << std::endl;
+//         }
+//         else
+//         {
+//             group.removeUser(currentUser); // Ensure you have this method defined in the Group class
+//             std::cout << "You have left the group \"" << group.groupName << "\"!" << std::endl;
+//         }
+//     }
+//     else
+//     {
+//         std::cout << "Group not found!" << std::endl;
+//     }
+// }
+
+// // Updated viewGroupChatHistory Function
+// void viewGroupChatHistory(const std::string &groupId, MessagingSystem &messagingSystem)
+// {
+//     const auto &groups = messagingSystem.getGroups(); // Use accessor to get groups
+
+//     auto it = groups.find(groupId);
+//     if (it != groups.end())
+//     {
+//         const Group &group = it->second; // Use const reference
+//         std::cout << "Chat history for group \"" << group.groupName << "\":\n";
+//         // Display the group's chat history...
+//     }
+//     else
+//     {
+//         std::cout << "Group not found!" << std::endl;
+//     }
+// }
 
 // Function to display the header
 void displayHeader()
@@ -415,6 +571,7 @@ void displayHeader()
     cout << "************************************************************" << "\n"
          << endl;
 }
+
 void showMenu()
 {
     displayHeader();
@@ -425,7 +582,6 @@ void showMenu()
 
 void showUserMenu()
 {
-    displayHeader();
     cout << "1. View Profile" << endl;
     cout << "2. Edit Profile" << endl;
     cout << "3. Create Post" << endl;
@@ -434,8 +590,8 @@ void showUserMenu()
     cout << "6. View Public Posts" << endl;
     cout << "7. View all users" << endl;
     cout << "8. Add Friend" << endl;
-    cout << "9. Send Message" << endl;
-    cout << "10. View Messages" << endl;
+    cout << "9. Messages" << endl;
+    cout << "10. Groups" << endl;
     cout << "11. Log Out" << endl;
 }
 
@@ -474,7 +630,9 @@ int main()
             currentUser = userManagement.logIn(username, password);
             if (currentUser)
             {
-                cout << "Log In successful!" << endl;
+                cout << "Log In successful!\n\n"
+                     << endl;
+                displayHeader();
                 while (true)
                 {
                     showUserMenu();
@@ -542,30 +700,145 @@ int main()
                     }
                     else if (userChoice == 9)
                     {
-                        friendSystem.viewFriends(currentUser);
-                        string recipientUsername, message;
-                        cout << "Enter recipient's username: ";
-                        cin >> recipientUsername;
-                        User *recipient = userManagement.findUserByUsername(recipientUsername);
-                        if (recipient)
+                        int messageChoice;
+                        std::string recipientUsername; // Declare recipientUsername here
+                        std::string message;           // Declare message here
+                        User *recipient = nullptr;     // Declare recipient here
+                        bool uHaveFriend = false;      // Declare uHaveFriend here
+
+                        do
                         {
-                            cout << "Enter your message: ";
-                            cin.ignore();
-                            getline(cin, message);
-                            messagingSystem.sendMessage(currentUser, recipient, message);
-                            sleep(1);
-                        }
-                        else
-                        {
-                            cout << "User not found!" << endl;
-                            sleep(1);
-                        }
+                            std::cout << "Messaging Menu:\n";
+                            std::cout << "1. View New Messages\n";
+                            std::cout << "2. Send Message\n";
+                            std::cout << "3. View Chat History\n";
+                            std::cout << "4. Display All Messages\n";
+                            std::cout << "0. Go Back\n"; // Option to exit the messaging menu
+                            std::cout << "Enter your choice: ";
+                            std::cin >> messageChoice;
+
+                            switch (messageChoice)
+                            {
+                            case 1: // View New Messages
+                                messagingSystem.viewNewMessages(currentUser);
+                                sleep(1);
+                                break;
+
+                            case 2:                                                  // Send Message
+                                uHaveFriend = friendSystem.viewFriends(currentUser); // Now safe to use
+                                if (uHaveFriend)
+                                {
+                                    std::cout << "Enter recipient's username: ";
+                                    std::cin >> recipientUsername; // Now safe to use
+                                    recipient = userManagement.findUserByUsername(recipientUsername);
+                                    if (recipient)
+                                    {
+                                        std::cout << "Enter your message: ";
+                                        std::cin.ignore();
+                                        std::getline(std::cin, message); // Now safe to use
+                                        messagingSystem.sendMessage(currentUser, recipient, message);
+                                        std::cout << "Message sent!" << std::endl;
+                                    }
+                                    else
+                                    {
+                                        std::cout << "User not found!" << std::endl;
+                                    }
+                                }
+                                else
+                                {
+                                    std::cout << "No friends found!" << std::endl;
+                                    std::cout << "You can only message your Friends!" << std::endl;
+                                }
+                                sleep(1);
+                                break;
+
+                            case 3:                                                  // View Chat History
+                                uHaveFriend = friendSystem.viewFriends(currentUser); // Check if the user has friends
+                                if (uHaveFriend)
+                                {
+                                    std::string friendUsername; // Declare the variable to hold friend's username
+                                    std::cout << "Enter Friend's username: ";
+                                    std::cin >> friendUsername; // Get friend's username from input
+
+                                    User *friendUser = userManagement.findUserByUsername(friendUsername); // Find the User object
+                                    if (friendUser)
+                                    {
+                                        messagingSystem.viewChatHistory(currentUser, friendUser); // Pass both the current user and the friend
+                                    }
+                                    else
+                                    {
+                                        std::cout << "Friend not found!" << std::endl; // Handle case where friend is not found
+                                    }
+                                }
+                                else
+                                {
+                                    std::cout << "You have no friends to view chat history with!" << std::endl;
+                                }
+                                sleep(1);
+                                break;
+
+                            case 4: // Display All Messages
+                                // messagingSystem.displayAllMessages();
+                                sleep(1);
+                                break;
+
+                            case 0: // Go Back
+                                std::cout << "Exiting messaging menu." << std::endl;
+                                break;
+
+                            default:
+                                std::cout << "Invalid choice! Please try again." << std::endl;
+                                break;
+                            }
+                        } while (messageChoice != 0);
                     }
-                    else if (userChoice == 10)
+                    else if (userChoice == 10) // Group Messaging
                     {
-                        messagingSystem.viewMessages(currentUser);
-                        sleep(1);
+                        int groupChoice;
+                        do
+                        {
+                            std::cout << "Group Messaging Menu:\n";
+                            std::cout << "1. Create Group\n";
+                            std::cout << "2. Send Message to Group\n";
+                            std::cout << "3. View Group Chat History\n";
+                            std::cout << "4. Join Group\n";
+                            std::cout << "5. Leave Group\n";
+                            std::cout << "0. Go Back\n";
+                            std::cout << "Enter your choice: ";
+                            std::cin >> groupChoice;
+
+                            switch (groupChoice)
+                            {
+                            case 1:
+                                // createGroup(currentUser, userManagement, friendSystem, messagingSystem);
+                                break;
+                            case 2:
+                                // sendMessageToGroup(currentUser, messagingSystem);
+                                break;
+                            case 3:
+                            {
+                                std::string groupId;
+                                std::cout << "Enter the Group ID to view chat history: ";
+                                std::cin >> groupId;
+                                // viewGroupChatHistory(groupId, messagingSystem); // Correctly pass groupId
+                                break;
+                            }
+                            case 4:
+                                // joinGroup(currentUser, messagingSystem);
+                                break;
+                            case 5:
+                                // leaveGroup(currentUser, messagingSystem);
+                                break;
+                            case 0:
+                                std::cout << "Exiting group messaging menu." << std::endl;
+                                break;
+                            default:
+                                std::cout << "Invalid choice! Please try again." << std::endl;
+                                break;
+                            }
+                        } while (groupChoice != 0);
                     }
+
                     else if (userChoice == 11)
                     {
                         currentUser = nullptr; // Log out
