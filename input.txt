@@ -22,6 +22,10 @@ Rishu
 rishu@gmail.com
 how u doin'?
 N
+// yaha tak logins hai kara lena
+
+
+
 2
 Swayam
 1234
@@ -53,6 +57,18 @@ Rishu
 2
 Swayam
 1234
+10
+1
+grp
+Maanya
+Y
+Rishu
+N
+////////yaha tak  friends banaya aur grp form kia
+
+
+
+
 9
 2
 Maanya
@@ -76,3 +92,6 @@ Hii!!
 3
 Swayam
 0
+
+
+//ye message check hogye hai
