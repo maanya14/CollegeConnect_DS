@@ -2,6 +2,7 @@
 #define SOCIAL_MEDIA_PLATFORM_H
 
 #include <unordered_map>
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -118,42 +119,64 @@ public:
         }
     }
 
+    void display2() const
+    {
+        MessageNode *current = head;
+        if (!current)
+        {
+            std::cout << "No messages in this group." << std::endl;
+            return;
+        }
+
+        while (current)
+        {
+            std::cout << "From " << current->sender->getUsername() << ": " << current->message << std::endl;
+            current = current->next;
+        }
+    }
     MessageNode *getHead() const
     {
         return head;
     }
 };
 
-// // Group Class for Group Messaging
-// class Group
-// {
-// public:
-//     std::string groupId;             // Unique identifier for the group
-//     std::string groupName;           // Name of the group
-//     std::set<User *> participants;   // Users in the group
-//     DoublyLinkedList messageHistory; // Group chat history
+// Group Class for Group Messaging
+class Group
+{
+public:
+    std::string groupId;             // Unique identifier for the group
+    std::string groupName;           // Name of the group
+    std::set<User *> participants;   // Users in the group
+    DoublyLinkedList messageHistory; // Group chat history
 
-//     Group(const std::string &groupId, const std::string &groupName)
-//         : groupId(groupId), groupName(groupName) {}
+    // Default constructor
+    Group() : groupId(""), groupName("") {}
 
-//     // Add a user to the group
-//     void addUser(User *user)
-//     {
-//         participants.insert(user);
-//     }
+    // Parameterized constructor
+    Group(const std::string &groupId, const std::string &groupName)
+        : groupId(groupId), groupName(groupName) {}
 
-//     // Remove a user from the group
-//     void removeUser(User *user)
-//     {
-//         participants.erase(user);
-//     }
+    void addUser(User *user)
+    {
+        participants.insert(user);
+    }
 
-//     // Check if a user is part of the group
-//     bool isUserInGroup(User *user) const
-//     {
-//         return participants.find(user) != participants.end();
-//     }
-// };
+    void removeUser(User *user)
+    {
+        participants.erase(user);
+    }
+
+    bool isUserInGroup(User *user) const
+    {
+        return participants.find(user) != participants.end();
+    }
+
+    // Add a message to the group's message history
+    void addMessage(User *sender, const std::string &message)
+    {
+        messageHistory.append(sender, nullptr, message);
+    }
+};
 
 // User Management Class
 class UserManagement
@@ -207,7 +230,7 @@ class MessagingSystem
 private:
     std::map<User *, std::queue<std::pair<User *, std::string>>> userMessages;
     std::map<User *, DoublyLinkedList> chatHistory; // One-on-one chat history
-    // std::map<std::string, Group> groups;            // Group messaging system
+    std::map<std::string, Group> groups;            // Group messaging system
 
 public:
     void sendMessage(User *fromUser, User *toUser, const std::string &message);
@@ -215,15 +238,17 @@ public:
     void viewChatHistory(User *recipient, User *friendUser);
 
     // Group-related functions
-    void createGroup(const std::string &groupId, const std::string &groupName, const std::set<User *> &initialParticipants);
-    void sendMessageToGroup(User *fromUser, const std::string &groupId, const std::string &message);
-    void viewGroupChatHistory(const std::string &groupId);
-    void addUserToGroup(const std::string &groupId, User *user);
-    void removeUserFromGroup(const std::string &groupId, User *user);
-    // const std::map<std::string, Group> &getGroups() const
-    // {
-    //     return groups;
-    // }
+    void createGroup(User *currentUser, UserManagement &userManagement, FriendSystem &friendSystem, MessagingSystem &messagingSystem);
+    // void createGroup(const std::string &groupId, const std::string &groupName, const std::set<User *> &initialParticipants);
+    bool sendMessageToGroup(User *fromUser, const std::string &groupId, const std::string &message);
+    void viewGroupChatHistory(const std::string &groupName, User *currentUser);
+    bool addUserToGroup(const std::string &groupName, User *user);
+    bool removeUserFromGroup(const std::string &groupId, User *user);
+    bool isUserInGroup(const std::string &groupName, User *user);
+    const std::map<std::string, Group> &getGroups() const
+    {
+        return groups;
+    }
 };
 
 #endif // SOCIAL_MEDIA_PLATFORM_H
