@@ -278,6 +278,7 @@ void UserManagement::displayAllUsers()
         cout << user->getUsername() << endl;
     }
 }
+
 // PostManagement Class Implementation
 void PostManagement::createPost(User *user, const string &content)
 {
@@ -429,131 +430,268 @@ void MessagingSystem::viewChatHistory(User *recipient, User *friendUser)
     }
 }
 
-// // Function to send a message to a group
-// void sendMessageToGroup(User *currentUser, MessagingSystem &messagingSystem)
-// {
-//     std::string groupId;
-//     std::cout << "Enter the Group ID: ";
-//     std::cin >> groupId;
+// Create Group Function
+void MessagingSystem::createGroup(User *currentUser, UserManagement &userManagement, FriendSystem &friendSystem, MessagingSystem &messagingSystem)
+{
+    bool uHaveFriend = friendSystem.viewFriends(currentUser);
+    if (!uHaveFriend)
+    {
+        std::cout << "You need at least one friend to create a group!" << std::endl;
+        return; // Exit if no friends are available
+    }
 
-//     std::string message;
-//     std::cout << "Enter your message: ";
-//     std::cin.ignore();
-//     std::getline(std::cin, message);
+    std::string groupName;
+    std::cout << "\nEnter the group name: ";
+    std::cin.ignore();
+    std::getline(std::cin, groupName); // Allow spaces in group name
 
-//     messagingSystem.sendMessageToGroup(currentUser, groupId, message);
-//     std::cout << "Message sent to group " << groupId << "!" << std::endl;
-// }
-// void joinGroup(User *currentUser, MessagingSystem &messagingSystem)
-// {
-//     std::cout << "Available Groups:\n";
-//     const auto &groups = messagingSystem.getGroups(); // Access groups through the accessor
-//     for (const auto &groupPair : groups)
-//     {
-//         const Group &group = groupPair.second;
-//         std::cout << "Group ID: " << group.groupId << ", Name: " << group.groupName << std::endl;
-//     }
+    std::string groupId = "G" + std::to_string(groups.size() + 1); // Unique group ID
 
-//     std::string groupId;
-//     std::cout << "Enter the Group ID to join: ";
-//     std::cin >> groupId;
+    std::set<User *> participants;
+    participants.insert(currentUser); // Add the creator as the first participant
 
-//     // Use the new method to add user to group
-//     messagingSystem.addUserToGroup(groupId, currentUser);
-// }
+    char addMore;
+    do
+    {
+        std::string friendUsername;
+        std::cout << "Enter the username of a friend to add to the group: ";
+        std::cin >> friendUsername;
 
-// // Function to create a group
-// void createGroup(User *currentUser, UserManagement &userManagement, FriendSystem &friendSystem, MessagingSystem &messagingSystem)
-// {
-//     bool uHaveFriend = friendSystem.viewFriends(currentUser);
-//     if (!uHaveFriend)
-//     {
-//         std::cout << "You need at least one friend to create a group!" << std::endl;
-//         return; // Exit if no friends are available
-//     }
+        User *friendUser = userManagement.findUserByUsername(friendUsername);
+        if (friendUser && friendUser != currentUser)
+        {
+            participants.insert(friendUser);
+            std::cout << friendUsername << " has been added to the group!" << std::endl;
+        }
+        else
+        {
+            std::cout << "Invalid username or you cannot add yourself!" << std::endl;
+        }
 
-//     std::string groupName;
-//     std::cout << "\nEnter the group name: ";
-//     std::cin.ignore();
-//     std::getline(std::cin, groupName); // Allow spaces in group name
+        std::cout << "Do you want to add another friend? (y/n): ";
+        std::cin >> addMore;
+    } while (addMore == 'y' || addMore == 'Y');
 
-//     std::string groupId = "G" + std::to_string(messagingSystem.getGroups().size() + 1); // Unique group ID
+    // Create the new group
+    Group newGroup(groupId, groupName);
+    newGroup.participants = participants; // Assign participants
+    groups[groupId] = newGroup;           // Store the group by ID
 
-//     std::set<User *> participants;
-//     participants.insert(currentUser); // Add the creator as the first participant
+    std::cout << "Group \"" << groupName << "\" created successfully with Group ID: " << groupId << std::endl;
+}
 
-//     char addMore;
-//     do
-//     {
-//         std::string friendUsername;
-//         std::cout << "Enter the username of a friend to add to the group: ";
-//         std::cin >> friendUsername;
+// Function to send a message to a group
+void sendMessageToGroup(User *currentUser, MessagingSystem &messagingSystem)
+{
+    std::string groupName;
+    std::cout << "Enter the Group Name: ";
+    std::cin.ignore();
+    std::getline(std::cin, groupName);
 
-//         User *friendUser = userManagement.findUserByUsername(friendUsername);
-//         if (friendUser && friendUser != currentUser)
-//         {
-//             participants.insert(friendUser);
-//             std::cout << friendUsername << " has been added to the group!" << std::endl;
-//         }
-//         else
-//         {
-//             std::cout << "Invalid username or you cannot add yourself!" << std::endl;
-//         }
+    std::string message;
+    std::cout << "Enter your message: ";
+    std::getline(std::cin, message);
 
-//         std::cout << "Do you want to add another friend? (y/n): ";
-//         std::cin >> addMore;
-//     } while (addMore == 'y' || addMore == 'Y');
+    // Check if user is part of the group before sending the message
+    if (messagingSystem.isUserInGroup(groupName, currentUser))
+    {
+        if (messagingSystem.sendMessageToGroup(currentUser, groupName, message))
+        {
+            std::cout << "Message sent to group \"" << groupName << "\"!" << std::endl;
+        }
+        else
+        {
+            std::cout << "Failed to send message to group \"" << groupName << "\"." << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "You are not a member of the group \"" << groupName << "\"!" << std::endl;
+    }
+}
+bool MessagingSystem::sendMessageToGroup(User *fromUser, const std::string &groupName, const std::string &message)
+{
+    auto it = std::find_if(groups.begin(), groups.end(), [&](const auto &pair)
+                           {
+                               return pair.second.groupName == groupName; // Match by group name
+                           });
 
-//     messagingSystem.createGroup(groupId, groupName, participants);
-//     std::cout << "Group \"" << groupName << "\" created successfully with Group ID: " << groupId << std::endl;
-// }
+    if (it != groups.end())
+    {
+        Group &group = it->second;
 
-// // Function to leave a group
-// void leaveGroup(User *currentUser, MessagingSystem &messagingSystem)
-// {
-//     std::string groupId;
-//     std::cout << "Enter the Group ID to leave: ";
-//     std::cin >> groupId;
+        // Check if the user is part of the group before sending the message
+        if (group.isUserInGroup(fromUser))
+        {
+            // Add the message to the group's message history
+            group.addMessage(fromUser, message);
 
-//     const auto &groups = messagingSystem.getGroups(); // Access groups through the accessor
-//     auto it = groups.find(groupId);
-//     if (it != groups.end())
-//     {
-//         // Use const_cast to cast away constness to allow modification
-//         Group &group = const_cast<Group &>(it->second); // Cast to non-const reference
-//         if (!group.isUserInGroup(currentUser))
-//         {
-//             std::cout << "You are not a member of this group!" << std::endl;
-//         }
-//         else
-//         {
-//             group.removeUser(currentUser); // Ensure you have this method defined in the Group class
-//             std::cout << "You have left the group \"" << group.groupName << "\"!" << std::endl;
-//         }
-//     }
-//     else
-//     {
-//         std::cout << "Group not found!" << std::endl;
-//     }
-// }
+            // Optionally send the message to the user message queue
+            for (User *user : group.participants)
+            {
+                if (user != fromUser)
+                {
+                    userMessages[user].push({fromUser, message});
+                }
+            }
+            return true; // Message sent successfully
+        }
+        else
+        {
+            std::cout << "You are not a member of the group \"" << groupName << "\"!" << std::endl;
+            return false; // User not in group
+        }
+    }
+    else
+    {
+        std::cout << "Group not found!" << std::endl;
+        return false; // Message not sent, group not found
+    }
+}
+bool MessagingSystem::isUserInGroup(const std::string &groupName, User *user)
+{
+    auto it = std::find_if(groups.begin(), groups.end(), [&](const auto &pair)
+                           {
+                               return pair.second.groupName == groupName; // Match by group name
+                           });
 
-// // Updated viewGroupChatHistory Function
-// void viewGroupChatHistory(const std::string &groupId, MessagingSystem &messagingSystem)
-// {
-//     const auto &groups = messagingSystem.getGroups(); // Use accessor to get groups
+    if (it != groups.end())
+    {
+        Group &group = it->second;
+        return group.isUserInGroup(user); // Check if the user is part of the group
+    }
+    return false; // Group not found
+}
+void MessagingSystem::viewGroupChatHistory(const std::string &groupName, User *currentUser)
+{
+    const auto &groups = getGroups(); // Use accessor to get groups
 
-//     auto it = groups.find(groupId);
-//     if (it != groups.end())
-//     {
-//         const Group &group = it->second; // Use const reference
-//         std::cout << "Chat history for group \"" << group.groupName << "\":\n";
-//         // Display the group's chat history...
-//     }
-//     else
-//     {
-//         std::cout << "Group not found!" << std::endl;
-//     }
-// }
+    auto it = std::find_if(groups.begin(), groups.end(), [&](const auto &pair)
+                           {
+                               return pair.second.groupName == groupName; // Match by group name
+                           });
+
+    if (it != groups.end())
+    {
+        const Group &group = it->second;
+
+        // Check if the current user is a member of the group
+        if (!group.isUserInGroup(currentUser))
+        {
+            std::cout << "You are not a member of the group \"" << group.groupName << "\"!" << std::endl;
+            return; // Exit the function if the user is not a member
+        }
+
+        std::cout << "Chat history for group \"" << group.groupName << "\":\n";
+        group.messageHistory.display2();
+    }
+    else
+    {
+        std::cout << "Group not found!" << std::endl;
+    }
+}
+
+bool MessagingSystem::addUserToGroup(const std::string &groupName, User *user)
+{
+    // Find the group by its name
+    auto it = std::find_if(groups.begin(), groups.end(), [&](const auto &pair)
+                           {
+                               return pair.second.groupName == groupName; // Match by group name
+                           });
+
+    if (it != groups.end())
+    {
+        Group &group = it->second; // Get the group reference
+
+        // Check if the user is already in the group
+        if (group.isUserInGroup(user))
+        {
+            std::cout << "User is already a member of the group \"" << group.groupName << "\"!" << std::endl;
+            return false; // User cannot join again
+        }
+
+        // Add the user to the group
+        group.addUser(user); // Ensure you have this method defined in the Group class
+        std::cout << "User \"" << user->getUsername() << "\" has been added to the group \"" << group.groupName << "\"!" << std::endl;
+        return true; // User successfully added to the group
+    }
+    else
+    {
+        std::cout << "Group \"" << groupName << "\" not found!" << std::endl;
+        return false; // Group does not exist
+    }
+}
+
+void joinGroup(User *currentUser, MessagingSystem &messagingSystem)
+{
+    std::cout << "Available Groups:\n";
+    const auto &groups = messagingSystem.getGroups(); // Access groups through the accessor
+    for (const auto &groupPair : groups)
+    {
+        const Group &group = groupPair.second;
+        std::cout << "Group Name: " << group.groupName << std::endl; // Displaying group name
+    }
+
+    std::string groupName;
+    std::cout << "Enter the Group Name to join: ";
+    std::cin.ignore();                 // Ignore any leftover newline characters in the input buffer
+    std::getline(std::cin, groupName); // Allow spaces in the group name
+
+    // Use the new method to add user to group by group name
+    if (messagingSystem.addUserToGroup(groupName, currentUser))
+    {
+        std::cout << "You have joined the group \"" << groupName << "\"!" << std::endl;
+    }
+    else
+    {
+        std::cout << "Failed to join the group \"" << groupName << "\". It may not exist." << std::endl;
+    }
+}
+
+void leaveGroup(User *currentUser, MessagingSystem &messagingSystem)
+{
+    std::string groupName;
+    std::cout << "Enter the Group Name to leave: ";
+    std::cin.ignore();
+    std::getline(std::cin, groupName); // Allow spaces in the group name
+
+    // Find the group by name
+    const auto &groups = messagingSystem.getGroups();
+    auto it = std::find_if(groups.begin(), groups.end(), [&](const auto &pair)
+                           { return pair.second.groupName == groupName; });
+
+    if (it != groups.end())
+    {
+        const std::string &groupId = it->first; // Get group ID based on group name
+        if (messagingSystem.removeUserFromGroup(groupId, currentUser))
+        {
+            std::cout << "You have left the group \"" << groupName << "\"!" << std::endl;
+        }
+        else
+        {
+            std::cout << "You are not a member of the group \"" << groupName << "\"!" << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "Group not found!" << std::endl;
+    }
+}
+
+bool MessagingSystem::removeUserFromGroup(const std::string &groupId, User *user)
+{
+    auto it = groups.find(groupId);
+    if (it != groups.end())
+    {
+        Group &group = it->second;
+        if (group.isUserInGroup(user))
+        {
+            group.removeUser(user); // Remove user from the group
+            return true;            // Successfully removed user
+        }
+    }
+    return false; // User was not part of the group or group not found
+}
 
 // Function to display the header
 void displayHeader()
@@ -712,7 +850,6 @@ int main()
                             std::cout << "1. View New Messages\n";
                             std::cout << "2. Send Message\n";
                             std::cout << "3. View Chat History\n";
-                            std::cout << "4. Display All Messages\n";
                             std::cout << "0. Go Back\n"; // Option to exit the messaging menu
                             std::cout << "Enter your choice: ";
                             std::cin >> messageChoice;
@@ -777,11 +914,6 @@ int main()
                                 sleep(1);
                                 break;
 
-                            case 4: // Display All Messages
-                                // messagingSystem.displayAllMessages();
-                                sleep(1);
-                                break;
-
                             case 0: // Go Back
                                 std::cout << "Exiting messaging menu." << std::endl;
                                 break;
@@ -810,24 +942,24 @@ int main()
                             switch (groupChoice)
                             {
                             case 1:
-                                // createGroup(currentUser, userManagement, friendSystem, messagingSystem);
+                                messagingSystem.createGroup(currentUser, userManagement, friendSystem, messagingSystem);
                                 break;
                             case 2:
-                                // sendMessageToGroup(currentUser, messagingSystem);
+                                sendMessageToGroup(currentUser, messagingSystem);
                                 break;
                             case 3:
                             {
-                                std::string groupId;
-                                std::cout << "Enter the Group ID to view chat history: ";
-                                std::cin >> groupId;
-                                // viewGroupChatHistory(groupId, messagingSystem); // Correctly pass groupId
+                                std::string groupName;
+                                std::cout << "Enter the Group Name to view chat history: ";
+                                std::cin >> groupName;
+                                messagingSystem.viewGroupChatHistory(groupName, currentUser); // Correctly pass groupId
                                 break;
                             }
                             case 4:
-                                // joinGroup(currentUser, messagingSystem);
+                                joinGroup(currentUser, messagingSystem);
                                 break;
                             case 5:
-                                // leaveGroup(currentUser, messagingSystem);
+                                leaveGroup(currentUser, messagingSystem);
                                 break;
                             case 0:
                                 std::cout << "Exiting group messaging menu." << std::endl;
@@ -859,3 +991,4 @@ int main()
 
     return 0;
 }
+
