@@ -349,31 +349,124 @@ vector<string> PostManagement::getAllPosts()
 }
 
 // FriendSystem Class Implementation
-void FriendSystem::addFriend(User *user, User *friendUser)
-{
-    friends[user].push_back(friendUser);
+// Send friend request
+void FriendSystem::sendFriendRequest(int user1, int user2) {
+    friendRequests[user2].enqueue(user1);
+    cout << "Friend request sent from User " << user1 << " to User " << user2 << ".\n";
 }
 
-bool FriendSystem::viewFriends(User *user)
-{
-    auto it = friends.find(user);
-    if (it != friends.end())
-    {
-        for (User *friendUser : it->second)
-        {
-            cout << friendUser->getUsername() << endl;
+// Accept all friend requests in batch
+void FriendSystem::acceptFriendRequestsBatch(int user) {
+    while (!friendRequests[user].isEmpty()) {
+        int requester = friendRequests[user].dequeue();
+        friends[user].insert(requester);
+        friends[requester].insert(user);
+        cout << "User " << user << " accepted friend request from User " << requester << ".\n";
+    }
+}
+
+// Display a user's friend list
+void FriendSystem::displayFriends(int user) {
+    std::cout << "Friends of User " << user << ": ";
+    friends[user].display();
+    cout << "\n";
+}
+
+// Display pending friend requests for a user
+void FriendSystem::displayPendingRequests(int user) {
+    std::cout << "Pending friend requests for User " << user << ": ";
+    Queue temp = friendRequests[user];
+    while (!temp.isEmpty()) {
+        cout << temp.dequeue() << " ";
+    }
+    cout << "\n";
+}
+
+// Suggest friends using BFS
+void FriendSystem::suggestFriendsBFS(int user) {
+    int mutualCount[MAX_USERS] = {0};
+    bool visited[MAX_USERS] = {false};
+    int queue[MAX_USERS];
+    int front = 0, rear = 0;
+
+    visited[user] = true;
+    queue[rear++] = user;
+
+    while (front < rear) {
+        int currentUser = queue[front++];
+        Node* friendNode = friends[currentUser].head;
+
+        while (friendNode != nullptr) {
+            int friendID = friendNode->userID;
+            if (!visited[friendID]) {
+                mutualCount[friendID]++;
+                visited[friendID] = true;
+                queue[rear++] = friendID;
+            }
+            friendNode = friendNode->next;
         }
-        return true;
     }
-    else
-    {
-        return false;
+
+    std::cout << "Suggested friends for User " << user << " using BFS: ";
+    for (int i = 0; i < MAX_USERS; i++) {
+        if (mutualCount[i] > 1 && !friends[user].contains(i)) {
+            cout << i << " (mutual friends: " << mutualCount[i] << ") ";
+        }
+    }
+    cout << "\n";
+}
+
+// Helper function for DFS suggestion
+void FriendSystem::dfs(int user, bool visited[], int mutualCount[]) {
+    visited[user] = true;
+
+    Node* friendNode = friends[user].head;
+    while (friendNode != nullptr) {
+        int friendID = friendNode->userID;
+        if (!visited[friendID]) {
+            mutualCount[friendID]++;
+            dfs(friendID, visited, mutualCount);
+        }
+        friendNode = friendNode->next;
     }
 }
 
-map<User *, list<User *>> FriendSystem::getFriendsList()
-{
-    return friends;
+// Suggest friends using DFS
+void FriendSystem::suggestFriendsDFS(int user) {
+    int mutualCount[MAX_USERS] = {0};
+    bool visited[MAX_USERS] = {false};
+
+    dfs(user, visited, mutualCount);
+
+    cout << "Suggested friends for User " << user << " using DFS: ";
+    for (int i = 0; i < MAX_USERS; i++) {
+        if (mutualCount[i] > 1 && !friends[user].contains(i)) {
+            cout << i << " (mutual friends: " << mutualCount[i] << ") ";
+        }
+    }
+    std::cout << "\n";
+}
+
+// Remove a friend
+void FriendSystem::removeFriend(int user1, int user2) {
+    friends[user1].remove(user2);
+    friends[user2].remove(user1);
+    cout << "User " << user1 << " and User " << user2 << " are no longer friends.\n";
+}
+
+// Display mutual friends count between two users
+void FriendSystem::mutualFriendsCount(int user1, int user2) {
+    int count = 0;
+    Node* friendNode1 = friends[user1].head;
+
+    while (friendNode1 != nullptr) {
+        if (friends[user2].contains(friendNode1->userID)) {
+            count++;
+        }
+        friendNode1 = friendNode1->next;
+    }
+
+    cout << "Mutual friends between User " << user1 << " and User " << user2 << ": " << count << "\n";
 }
 
 // MessagingSystem Class Implementation

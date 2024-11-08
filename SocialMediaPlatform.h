@@ -13,7 +13,111 @@
 #include <windows.h>
 #include <unistd.h>
 using namespace std;
+#define MAX_USERS 100
+#define MAX_REQUESTS 10
 
+// Basic Queue for managing friend requests
+class Queue {
+    int arr[MAX_REQUESTS];
+    int front, rear, size;
+public:
+    Queue() : front(0), rear(-1), size(0) {}
+    bool isEmpty() { return size == 0; }
+    bool isFull() { return size == MAX_REQUESTS; }
+    void enqueue(int x);
+    int dequeue();
+    int frontItem();
+};
+
+void Queue::enqueue(int x) {
+    if (!isFull()) {
+        rear = (rear + 1) % MAX_REQUESTS;
+        arr[rear] = x;
+        size++;
+    }
+}
+
+int Queue::dequeue() {
+    if (!isEmpty()) {
+        int x = arr[front];
+        front = (front + 1) % MAX_REQUESTS;
+        size--;
+        return x;
+    }
+    return -1;
+}
+
+int Queue::frontItem() {
+    return isEmpty() ? -1 : arr[front];
+}
+
+// Node structure for linked list used in friends' list management
+struct Node {
+    int userID;
+    Node* next;
+    Node(int id) : userID(id), next(nullptr) {}
+};
+
+class LinkedList {
+public:
+    Node* head;
+    LinkedList() : head(nullptr) {}
+    void insert(int userID);
+    bool contains(int userID);
+    void remove(int userID);
+    void display();
+};
+
+void LinkedList::insert(int userID) {
+    Node* newNode = new Node(userID);
+    newNode->next = head;
+    head = newNode;
+}
+
+bool LinkedList::contains(int userID) {
+    Node* temp = head;
+    while (temp != nullptr) {
+        if (temp->userID == userID) return true;
+        temp = temp->next;
+    }
+    return false;
+}
+
+void LinkedList::remove(int userID) {
+    Node* temp = head, *prev = nullptr;
+    while (temp != nullptr && temp->userID != userID) {
+        prev = temp;
+        temp = temp->next;
+    }
+    if (temp == nullptr) return;
+    if (prev == nullptr) head = head->next;
+    else prev->next = temp->next;
+    delete temp;
+}
+
+void LinkedList::display() {
+    Node* temp = head;
+    while (temp != nullptr) {
+        cout << temp->userID << " ";
+        temp = temp->next;
+    }
+}
+
+// FriendSystem class for managing friendships and requests
+class FriendSystem {
+    LinkedList friends[MAX_USERS]; 
+    Queue friendRequests[MAX_USERS];
+public:
+    void sendFriendRequest(int user1, int user2);
+    void acceptFriendRequestsBatch(int user);
+    void displayFriends(int user);
+    void suggestFriendsBFS(int user);
+    void suggestFriendsDFS(int user);
+    void displayPendingRequests(int user);
+    void removeFriend(int user1, int user2);
+    void mutualFriendsCount(int user1, int user2);
+    void dfs(int user, bool visited[], int mutualCount[]);
+};
 // User Class
 class User
 {
@@ -210,18 +314,6 @@ public:
     void viewFriendsPosts(User *user, const std::map<User *, std::list<User *>> &friends);
     void viewPublicPosts(const std::map<User *, std::list<std::string>> &userPosts, User *currentUser);
     std::vector<std::string> getAllPosts(); // Return all posts as strings
-};
-
-// Friend System Class
-class FriendSystem
-{
-private:
-    std::map<User *, std::list<User *>> friends; // User object as key, list of friends as value
-
-public:
-    void addFriend(User *user, User *friendUser);
-    bool viewFriends(User *user);
-    std::map<User *, std::list<User *>> getFriendsList(); // To get the entire friends list
 };
 
 // Messaging System Class (One-on-One and Group Messaging)
