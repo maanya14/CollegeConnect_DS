@@ -1,6 +1,7 @@
 #include "SocialMediaPlatform.h"
 #include <iostream>
 #include <vector>
+#include<limits>
 using namespace std;
 
 // User Class Implementation
@@ -1075,6 +1076,7 @@ void showMenu()
     cout << "1. Sign Up" << endl;
     cout << "2. Log In" << endl;
     cout << "3. Exit" << endl;
+    cout<<endl;
 }
 
 void showUserMenu()
@@ -1092,6 +1094,7 @@ void showUserMenu()
     cout << "10. Group Messages" << endl;
     cout << "11. Friends" << endl;
     cout << "12. Log Out" << endl;
+    cout<<endl;
 }
 void showFriendMenu()
 {
@@ -1101,6 +1104,7 @@ void showFriendMenu()
     cout << "4. View Pending Friend Requests" << endl;
     cout << "5. Remove a Friend" << endl;
     cout << "6. Count Mutual Friends" << endl;
+    cout<<endl;
 }
 
 int main()
