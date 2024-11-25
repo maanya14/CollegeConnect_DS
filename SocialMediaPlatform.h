@@ -234,7 +234,7 @@ public:
     void addReplyToComment(User *user, const string &postContent, Comment *parentComment, const string &replyContent);
     void displayPostWithComments(const string &postContent);
     vector<string> getAllPosts();
-    void viewPostComments(const string &postContent);
+    void viewPostComments(const string &postContent, User *currentUser);
     void addCommentOrReply(Comment &parentComment, User *currentUser);
     void interactiveCommentSection(User *currentUser);
 };
