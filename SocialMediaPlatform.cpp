@@ -349,24 +349,53 @@ void PostManagement::viewUserPosts(User *user)
     }
 }
 
-void PostManagement::viewPostComments(const string &postContent)
+void PostManagement::viewPostComments(const std::string &postContent, User *currentUser)
 {
     auto it = postComments.find(postContent);
     if (it != postComments.end())
     {
-        cout << "Comments for post: " << postContent << endl;
-        for (auto *comment : it->second) 
-        {
-            comment->displayComment(); 
+        std::cout << "Comments for post: " << postContent << std::endl;
 
-            addCommentOrReply(*comment, nullptr); 
+        for (auto *comment : it->second) // Iterate through existing comments
+        {
+            comment->displayComment(); // Display the comment
+            while (true) // Ask user if they want to reply
+            {
+                std::cout << "Do you want to add a reply to this comment? (y/n): ";
+                char choice;
+                std::cin >> choice;
+
+                if (choice == 'y' || choice == 'Y')
+                {
+                    std::cin.ignore(); // Ignore leftover newline
+                    std::cout << "Enter your reply: ";
+                    std::string replyContent;
+                    std::getline(std::cin, replyContent);
+
+                    comment->addReply(currentUser, replyContent); // Add reply
+                    std::cout << "Reply added successfully!" << std::endl;
+                }
+                else if (choice == 'n' || choice == 'N')
+                {
+                    break; // Exit the loop if user doesn't want to reply
+                }
+                else
+                {
+                    std::cout << "Invalid input. Please enter 'y' or 'n'." << std::endl;
+                }
+            }
+
+             std::cin.clear();
+        std::cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
     }
     else
     {
-        cout << "No comments found for this post." << endl;
+        std::cout << "No comments found for this post." << std::endl;
     }
 }
+
+
 
 void PostManagement::viewFriendsPosts(User *user, const map<User *, list<User *>> &friends)
 {
@@ -486,8 +515,9 @@ void Comment::displayComment(int level) {
 
 
 void PostManagement::addCommentOrReply(Comment &parentComment, User *currentUser) {
-    string content;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear leftover newline
     cout << "Enter your comment/reply: ";
+    string content;
     getline(cin, content);
 
     parentComment.addReply(currentUser, content);
@@ -559,8 +589,6 @@ void PostManagement::interactiveCommentSection(User *currentUser) {
         }
     }
 }
-
-
 // FriendSystem Class Implementation
 void FriendSystem::addFriend(User *user, User *friendUser)
     {
