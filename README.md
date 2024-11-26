@@ -1,6 +1,6 @@
 # College Connect - A C++ Social Media Platform
 
-**[Repository Link](https://github.com/SwayamGupta12345/CollegeConnect_in_cpp)**
+**[Repository Link](https://github.com/maanya14/CollegeConnect_DS.git)**
 
 "College Connect" is a robust and interactive social media platform designed for college students, implemented in **C++**. This project demonstrates advanced applications of **data structures** like graphs, hash tables, linked lists, and priority queues. Developed as a **third-semester Data Structures project**, it highlights functionalities such as **user management, community interactions, friend systems, messaging**, and **group management**.
 
