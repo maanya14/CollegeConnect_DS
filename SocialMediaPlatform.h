@@ -213,7 +213,7 @@ public:
     void editProfile(User *user);
     User *validateUsername(const string &username);
     bool isValidEmail(const string &email);
-    
+
     friend class FriendSystem;
     friend class MessagingSystem;
 };
