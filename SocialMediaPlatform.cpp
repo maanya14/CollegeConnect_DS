@@ -1,13 +1,11 @@
 #include "SocialMediaPlatform.h"
 #include <iostream>
 #include <vector>
-#include<limits>
+#include <limits>
 using namespace std;
 
-// User Class Implementation
 User::User(const string &uname, const string &pwd, const string &email, const string &bio, bool isPublic)
     : username(uname), password(pwd), email(email), bio(bio), isPublic(isPublic) {}
-
 string User::getUsername() { return username; }
 string User::getEmail() { return email; }
 string User::getBio() { return bio; }
@@ -20,25 +18,19 @@ void User::updatePassword(const string &newPassword) { password = newPassword; }
 void User::updatePrivacy(bool newPrivacy) { isPublic = newPrivacy; }
 void User::updateUsername(const string &newUsername) { username = newUsername; }
 
-// UserManagement Class Implementation
-
 User *UserManagement::validateUsername(const string &username)
 {
     auto it = userCredentials.find(username);
     if (it != userCredentials.end())
     {
-        return it->second.second; // Username exists, return the user object
+        return it->second.second;
     }
-    return nullptr; // Username does not exist
+    return nullptr;
 }
-
 bool UserManagement::isValidEmail(const string &email)
 {
-    // Find the position of '@' and '.' after '@'
     int atPos = -1;
     int dotPos = -1;
-
-    // Loop through the string to find '@' and the last '.'
     for (int i = 0; i < email.length(); i++)
     {
         if (email[i] == '@')
@@ -50,28 +42,33 @@ bool UserManagement::isValidEmail(const string &email)
             dotPos = i;
         }
     }
-
-    // Basic checks: '@' should exist, '.' should come after '@', and they should not be at the start or end
     if (atPos > 0 && dotPos > atPos + 1 && dotPos < email.length() - 1)
     {
         return true;
     }
     return false;
 }
-
 User *UserManagement::signUp()
 {
     string username, password, email, bio;
     bool isPublic;
 
-    // Check if the username already exists
     while (true)
-    {
+    {   cin.ignore();
         cout << "Enter username: ";
-        cin >> username;
+        getline(cin,username);
+
+        // Check for spaces in username
+        if (username.find(' ') != string::npos)
+        {
+            cout << "Usernames cannot contain spaces. Please try again." << endl;
+            return nullptr;
+        }
+
+        // Validate if the username is unique
         if (validateUsername(username) == nullptr)
         {
-            break; // Username is available
+            break;
         }
         else
         {
@@ -82,14 +79,15 @@ User *UserManagement::signUp()
     cout << "Enter password: ";
     cin >> password;
 
-    // Validate email
     while (true)
     {
         cout << "Enter email: ";
         cin >> email;
+
+        // Validate email format
         if (isValidEmail(email))
         {
-            break; // Valid email
+            break;
         }
         else
         {
@@ -98,18 +96,19 @@ User *UserManagement::signUp()
     }
 
     cout << "Enter bio: ";
-    cin.ignore();
+    cin.ignore(); // Clear the buffer
     getline(cin, bio);
 
-    // Error handling for public/private input
     while (true)
     {
         char choice;
         cout << "Do you want your profile to be public? (Y for Yes, N for No): ";
         cin >> choice;
+
+        // Validate public/private choice
         if (choice == 'y' || choice == 'Y' || choice == 'n' || choice == 'N')
         {
-            isPublic = (choice == 'y' || choice == 'Y') ? 1 : 0; // Set isPublic to 1 for 'y', 0 for 'n'
+            isPublic = (choice == 'y' || choice == 'Y') ? true : false;
             break;
         }
         else
@@ -118,24 +117,22 @@ User *UserManagement::signUp()
         }
     }
 
-    // Create a new user
+    // Create a new user and store in data structures
     User *newUser = new User(username, password, email, bio, isPublic);
-    userCredentials[username] = {password, newUser}; // Store username, password, and user object
-    userProfiles.push_back(newUser);                 // Add user to linked list
+    userCredentials[username] = {password, newUser};
+    userProfiles.push_back(newUser);
 
     return newUser;
 }
-
 User *UserManagement::logIn(const string &username, const string &password)
 {
     auto it = userCredentials.find(username);
     if (it != userCredentials.end() && it->second.first == password)
     {
-        return it->second.second; // Return user if username and password match
+        return it->second.second;
     }
-    return nullptr; // Invalid username or password
+    return nullptr;
 }
-
 void UserManagement::editProfile(User *user)
 {
     int choice;
@@ -150,29 +147,19 @@ void UserManagement::editProfile(User *user)
         cout << "6. Go Back" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
-
-        if (choice == 1) // Change Username
+        if (choice == 1)
         {
             string newUsername;
             while (true)
             {
                 cout << "Enter new username: ";
                 cin >> newUsername;
-
-                if (validateUsername(newUsername) == nullptr) // Check if username is available
+                if (validateUsername(newUsername) == nullptr)
                 {
                     string oldUsername = user->getUsername();
-
-                    // Step 1: Update the username in the userCredentials map
-                    userCredentials[newUsername] = userCredentials[oldUsername]; // Copy entry
-                    userCredentials.erase(oldUsername);                          // Remove old entry
-
-                    // Step 2: Update the User object with the new username
+                    userCredentials[newUsername] = userCredentials[oldUsername];
+                    userCredentials.erase(oldUsername);
                     user->updateUsername(newUsername);
-
-                    // Step 3: The user object is already in userProfiles (a list of pointers), so no need to update there,
-                    //         but the username in the user object is now updated.
-
                     cout << "Username updated successfully!" << endl;
                     break;
                 }
@@ -188,7 +175,7 @@ void UserManagement::editProfile(User *user)
             cout << "Enter new bio: ";
             cin.ignore();
             getline(cin, newBio);
-            user->updateBio(newBio); // Use updateBio method
+            user->updateBio(newBio);
             cout << "Bio updated successfully!" << endl;
         }
         else if (choice == 3)
@@ -214,11 +201,10 @@ void UserManagement::editProfile(User *user)
             cin >> newPassword;
             cout << "Confirm new password: ";
             cin >> confirmPassword;
-
             if (newPassword == confirmPassword)
             {
                 user->updatePassword(newPassword);
-                userCredentials[user->getUsername()].first = newPassword; // Update password in the map
+                userCredentials[user->getUsername()].first = newPassword;
                 cout << "Password updated successfully!" << endl;
             }
             else
@@ -237,7 +223,7 @@ void UserManagement::editProfile(User *user)
                 if (choice == 'y' || choice == 'Y' || choice == 'n' || choice == 'N')
                 {
                     isPublic = (choice == 'y' || choice == 'Y');
-                    user->updatePrivacy(isPublic); // Update privacy settings
+                    user->updatePrivacy(isPublic);
                     cout << "Privacy settings updated successfully!" << endl;
                     break;
                 }
@@ -249,7 +235,7 @@ void UserManagement::editProfile(User *user)
         }
         else if (choice == 6)
         {
-            break; // Go back to the main menu
+            break;
         }
         else
         {
@@ -257,54 +243,40 @@ void UserManagement::editProfile(User *user)
         }
     }
 }
-
 void UserManagement::displayProfile(User *user)
 {
     cout << "Username: " << user->getUsername() << endl;
-
     cout << "Email: " << user->getEmail() << endl;
     cout << "Bio: " << user->getBio() << endl;
     cout << "Profile Status: " << (user->isProfilePublic() ? "Public" : "Private") << endl;
 }
-
 User *UserManagement::findUserByUsername(const string &username)
 {
     auto it = userCredentials.find(username);
     return (it != userCredentials.end()) ? it->second.second : nullptr; // Return user if found
 }
-
 void UserManagement::displayAllUsers()
 {
     for (User *user : userProfiles)
-    { // Iterate over linked list
+    {
         cout << user->getUsername() << endl;
     }
 }
-
-
-// PostManagement Class Implementation
 void PostManagement::createPost(User *user, const string &content)
 {
     userPosts[user].push_back(content);
     postComments[content] = {};
     cout << "post created successfully" << endl;
 }
-
 void PostManagement::addComment(User *user, const std::string &postContent, const std::string &commentContent)
 {
-    // Displaying debug info
     std::cout << "Adding a new comment by user: " << user->getUsername() << std::endl;
     std::cout << "Post content: " << postContent << std::endl;
     std::cout << "Comment content: " << commentContent << std::endl;
-
-    // Creating the comment
     Comment *newComment = new Comment(user, commentContent);
-    postComments[postContent].emplace_back(newComment); // Add Comment pointer
-
-    // Confirm comment addition
+    postComments[postContent].emplace_back(newComment);
     std::cout << "Comment added successfully to post: " << postContent << std::endl;
 }
-
 void PostManagement::viewUserPosts(User *user)
 {
     auto it = userPosts.find(user);
@@ -313,29 +285,25 @@ void PostManagement::viewUserPosts(User *user)
         for (const string &post : it->second)
         {
             cout << post << endl;
-
-            // New function call for interactive comment section
             interactiveCommentSection(user);
-
-            while (true) // Loop to allow adding comments or skipping
+            while (true)
             {
                 cout << "Do you want to add a comment to this post? (y/n): ";
                 char choice;
                 cin >> choice;
-
                 if (choice == 'y' || choice == 'Y')
                 {
-                    cin.ignore(); // Ignore any leftover newline character
+                    cin.ignore();
                     cout << "Enter your comment: ";
                     string commentContent;
                     getline(cin, commentContent);
-
                     addComment(user, post, commentContent);
                 }
                 else if (choice == 'n' || choice == 'N')
                 {
-                    cout << "Next post:" << endl << endl;
-                    break; // Exit loop to move to the next post
+                    cout << "Next post:" << endl
+                         << endl;
+                    break;
                 }
                 else
                 {
@@ -349,45 +317,40 @@ void PostManagement::viewUserPosts(User *user)
         cout << "No posts found!" << endl;
     }
 }
-
 void PostManagement::viewPostComments(const std::string &postContent, User *currentUser)
 {
     auto it = postComments.find(postContent);
     if (it != postComments.end())
     {
         std::cout << "Comments for post: " << postContent << std::endl;
-
-        for (auto *comment : it->second) // Iterate through existing comments
+        for (auto *comment : it->second)
         {
-            comment->displayComment(); // Display the comment
-            while (true) // Ask user if they want to reply
+            comment->displayComment();
+            while (true)
             {
                 std::cout << "Do you want to add a reply to this comment? (y/n): ";
                 char choice;
                 std::cin >> choice;
-
                 if (choice == 'y' || choice == 'Y')
                 {
-                    std::cin.ignore(); // Ignore leftover newline
+                    std::cin.ignore();
                     std::cout << "Enter your reply: ";
                     std::string replyContent;
                     std::getline(std::cin, replyContent);
-
-                    comment->addReply(currentUser, replyContent); // Add reply
+                    comment->addReply(currentUser, replyContent);
                     std::cout << "Reply added successfully!" << std::endl;
                 }
                 else if (choice == 'n' || choice == 'N')
                 {
-                    break; // Exit the loop if user doesn't want to reply
+                    break;
                 }
                 else
                 {
                     std::cout << "Invalid input. Please enter 'y' or 'n'." << std::endl;
                 }
             }
-
-             std::cin.clear();
-        std::cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            std::cin.clear();
+            std::cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
     }
     else
@@ -395,9 +358,6 @@ void PostManagement::viewPostComments(const std::string &postContent, User *curr
         std::cout << "No comments found for this post." << std::endl;
     }
 }
-
-
-
 void PostManagement::viewFriendsPosts(User *user, const map<User *, list<User *>> &friends)
 {
     auto it = friends.find(user);
@@ -407,34 +367,28 @@ void PostManagement::viewFriendsPosts(User *user, const map<User *, list<User *>
         {
             cout << "Posts by " << friendUser->getUsername() << ":" << endl;
             auto friendPosts = userPosts.find(friendUser);
-
             if (friendPosts != userPosts.end())
             {
                 for (const string &post : friendPosts->second)
                 {
                     cout << post << endl;
-
-                    // New function call for interactive comment section
                     interactiveCommentSection(friendUser);
-
                     while (true)
                     {
                         cout << "Do you want to add a comment to this post? (y/n): ";
                         char choice;
                         cin >> choice;
-
                         if (choice == 'y' || choice == 'Y')
                         {
-                            cin.ignore(); // Ignore any leftover newline character
+                            cin.ignore();
                             cout << "Enter your comment: ";
                             string commentContent;
                             getline(cin, commentContent);
-
                             addComment(user, post, commentContent);
                         }
                         else if (choice == 'n' || choice == 'N')
                         {
-                            break; // Move to the next post
+                            break;
                         }
                         else
                         {
@@ -454,7 +408,6 @@ void PostManagement::viewFriendsPosts(User *user, const map<User *, list<User *>
         cout << "No friends found!" << endl;
     }
 }
-
 void PostManagement::viewPublicPosts(const map<User *, list<string>> &userPosts, User *currentUser)
 {
     for (const auto &pair : userPosts)
@@ -463,32 +416,26 @@ void PostManagement::viewPublicPosts(const map<User *, list<string>> &userPosts,
         if (user != currentUser && user->isProfilePublic())
         {
             cout << "Posts by " << user->getUsername() << " (Public Profile):" << endl;
-
             for (const string &post : pair.second)
             {
                 cout << post << endl;
-
-                // New function call for interactive comment section
                 interactiveCommentSection(user);
-
                 while (true)
                 {
                     cout << "Do you want to add a comment to this post? (y/n): ";
                     char choice;
                     cin >> choice;
-
                     if (choice == 'y' || choice == 'Y')
                     {
-                        cin.ignore(); // Ignore any leftover newline character
+                        cin.ignore();
                         cout << "Enter your comment: ";
                         string commentContent;
                         getline(cin, commentContent);
-
                         addComment(currentUser, post, commentContent);
                     }
                     else if (choice == 'n' || choice == 'N')
                     {
-                        break; // Move to the next post
+                        break;
                     }
                     else
                     {
@@ -499,48 +446,42 @@ void PostManagement::viewPublicPosts(const map<User *, list<string>> &userPosts,
         }
     }
 }
-void Comment::addReply(User *replier, const string &replyContent) {
+void Comment::addReply(User *replier, const string &replyContent)
+{
     replies.emplace_back(replier, replyContent);
 }
-
-void Comment::displayComment(int level) {
-    for (int i = 0; i < level; i++) {
+void Comment::displayComment(int level)
+{
+    for (int i = 0; i < level; i++)
+    {
         cout << "  ";
     }
     cout << getAuthor() << ": " << getContent() << endl;
-
-    for (auto &reply : replies) {
+    for (auto &reply : replies)
+    {
         reply.displayComment(level + 1);
     }
 }
-
-
-void PostManagement::addCommentOrReply(Comment &parentComment, User *currentUser) {
-    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear leftover newline
+void PostManagement::addCommentOrReply(Comment &parentComment, User *currentUser)
+{
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cout << "Enter your comment/reply: ";
     string content;
     getline(cin, content);
-
     parentComment.addReply(currentUser, content);
     cout << "Reply added successfully!" << endl;
 }
-
-void PostManagement::interactiveCommentSection(User *currentUser) {
+void PostManagement::interactiveCommentSection(User *currentUser)
+{
     string content;
     cout << "Welcome to the Comment Section!\n";
-
-    // Use currentUser as the root user
     User *rootUser = currentUser;
-
-    // Prompt for the main comment content
     cout << "Enter the main comment: ";
-    cin.ignore(); // Clear the input buffer
+    cin.ignore();
     getline(cin, content);
-
-    // Create the root comment with the current user
     Comment rootComment(rootUser, content);
-
-    while (true) {
+    while (true)
+    {
         int choice;
         cout << "\nOptions:\n";
         cout << "1. Add a reply to the main comment\n";
@@ -549,40 +490,35 @@ void PostManagement::interactiveCommentSection(User *currentUser) {
         cout << "4. Exit\n";
         cout << "Enter your choice: ";
         cin >> choice;
-
-        switch (choice) {
+        switch (choice)
+        {
         case 1:
-            // Add a reply to the root comment
             addCommentOrReply(rootComment, currentUser);
             break;
-        case 2: {
-            // Add a reply to an existing reply
+        case 2:
+        {
             int replyIndex;
             cout << "Enter the index of the reply you'd like to respond to: ";
             cin >> replyIndex;
-
-            // Use a loop to traverse the list and get the target reply
             auto &replies = rootComment.getReplies();
-            if (replyIndex <= 0 || replyIndex > static_cast<int>(replies.size())) {
+            if (replyIndex <= 0 || replyIndex > static_cast<int>(replies.size()))
+            {
                 cout << "Invalid reply index. Please try again.\n";
                 break;
             }
-
             auto it = replies.begin();
-            for (int i = 1; i < replyIndex; ++i) {
-                ++it; // Move iterator manually
+            for (int i = 1; i < replyIndex; ++i)
+            {
+                ++it;
             }
-
             addCommentOrReply(*it, currentUser);
             break;
         }
         case 3:
-            // Display all comments and replies
             cout << "\nDisplaying all comments:\n";
             rootComment.displayComment();
             break;
         case 4:
-            // Exit the comment section
             cout << "Exiting the Comment Section. Goodbye!\n";
             return;
         default:
@@ -590,93 +526,77 @@ void PostManagement::interactiveCommentSection(User *currentUser) {
         }
     }
 }
-// FriendSystem Class Implementation
 void FriendSystem::addFriend(User *user, User *friendUser)
+{
+    if (find(friends[user].begin(), friends[user].end(), friendUser) != friends[user].end())
     {
-        if (find(friends[user].begin(), friends[user].end(), friendUser) != friends[user].end())
-        {
-            cout << friendUser->getUsername() << " is already a friend of " << user->getUsername() << ".\n";
-            return;
-        }
-        friends[user].push_back(friendUser);
-        friends[friendUser].push_back(user);
-        cout << "Friend added: " << user->getUsername() << " and " << friendUser->getUsername() << " are now friends.\n";
+        cout << friendUser->getUsername() << " is already a friend of " << user->getUsername() << ".\n";
+        return;
     }
-
-    // View friends of a given user
-    bool FriendSystem::viewFriends(User *user)
+    friends[user].push_back(friendUser);
+    friends[friendUser].push_back(user);
+    cout << "Friend added: " << user->getUsername() << " and " << friendUser->getUsername() << " are now friends.\n";
+}
+bool FriendSystem::viewFriends(User *user)
+{
+    auto &friendList = friends[user];
+    if (friendList.empty())
     {
-        auto &friendList = friends[user];
-        if (friendList.empty())
-        {
-            cout << user->getUsername() << " has no friends.\n";
-            return false;
-        }
-
-        cout << "Friends of " << user->getUsername() << ": ";
-        for (User *friendUser : friendList)
-        {
-            cout << friendUser->getUsername() << " ";
-        }
-        cout << "\n";
-        return true;
+        cout << user->getUsername() << " has no friends.\n";
+        return false;
     }
-    // Suggest friends using BFS
-    void FriendSystem::suggestFriendsBFS(User *user)
+    cout << "Friends of " << user->getUsername() << ": ";
+    for (User *friendUser : friendList)
     {
-        map<User *, bool> visited;
-        list<User *> queue;
-
-        // Mark the starting user as visited and enqueue them
-        visited[user] = true;
-        queue.push_back(user);
-
-        cout << "Friend suggestions for " << user->getUsername() << " using BFS:\n";
-        while (!queue.empty())
+        cout << friendUser->getUsername() << " ";
+    }
+    cout << "\n";
+    return true;
+}
+void FriendSystem::suggestFriendsBFS(User *user)
+{
+    map<User *, bool> visited;
+    list<User *> queue;
+    visited[user] = true;
+    queue.push_back(user);
+    cout << "Friend suggestions for " << user->getUsername() << " using BFS:\n";
+    while (!queue.empty())
+    {
+        User *current = queue.front();
+        queue.pop_front();
+        for (User *friendUser : friends[current])
         {
-            User *current = queue.front();
-            queue.pop_front();
-
-            for (User *friendUser : friends[current])
-            {   
             if (!visited[friendUser])
-                {
-            visited[friendUser] = true;
-            queue.push_back(friendUser);
-            if (find(friends[user].begin(), friends[user].end(), friendUser) == friends[user].end())
             {
-            cout << "Suggested: " << friendUser->getUsername() << endl;
-            }
+                visited[friendUser] = true;
+                queue.push_back(friendUser);
+                if (find(friends[user].begin(), friends[user].end(), friendUser) == friends[user].end())
+                {
+                    cout << "Suggested: " << friendUser->getUsername() << endl;
                 }
             }
-
         }
-        cout << "\n";
     }
-
-    // Suggest friends using DFS
-    void FriendSystem::suggestFriendsDFS(User *user)
+    cout << "\n";
+}
+void FriendSystem::suggestFriendsDFS(User *user)
+{
+    map<User *, bool> visited;
+    map<User *, int> mutualCount;
+    dfs(user, visited, mutualCount);
+    cout << "Friend suggestions for " << user->getUsername() << " using DFS:\n";
+    for (const auto &entry : mutualCount)
     {
-        map<User *, bool> visited;
-        map<User *, int> mutualCount;
-        dfs(user, visited, mutualCount);
-
-        cout << "Friend suggestions for " << user->getUsername() << " using DFS:\n";
-        for (const auto &entry : mutualCount)
+        if (entry.first != user && find(friends[user].begin(), friends[user].end(), entry.first) == friends[user].end())
         {
-            if (entry.first != user && find(friends[user].begin(), friends[user].end(), entry.first) == friends[user].end())
-            {
-                cout << entry.first->getUsername() << " (Mutual friends: " << entry.second << ")\n";
-            }
+            cout << entry.first->getUsername() << " (Mutual friends: " << entry.second << ")\n";
         }
     }
-
-    // DFS helper function
-   void FriendSystem::dfs(User *user, map<User *, bool> &visited, map<User *, int> &mutualCount)
+}
+void FriendSystem::dfs(User *user, map<User *, bool> &visited, map<User *, int> &mutualCount)
 {
     visited[user] = true;
     cout << "DFS visiting: " << user->getUsername() << endl;
-
     for (User *friendUser : friends[user])
     {
         mutualCount[friendUser]++;
@@ -686,69 +606,53 @@ void FriendSystem::addFriend(User *user, User *friendUser)
         }
     }
 }
-
-
-    // Display pending friend requests for a user
-    void FriendSystem::displayPendingRequests(User *user)
+void FriendSystem::displayPendingRequests(User *user)
+{
+    auto &requests = pendingRequests[user];
+    if (requests.empty())
     {
-        auto &requests = pendingRequests[user];
-
-        if (requests.empty())
-        {
-            cout << "No pending friend requests for " << user->getUsername() << ".\n";
-            return;
-        }
-
-        cout << "Pending friend requests for " << user->getUsername() << ": ";
-        for (User *requester : requests)
-        {
-            cout << requester->getUsername() << " ";
-        }
-        cout << "\n";
+        cout << "No pending friend requests for " << user->getUsername() << ".\n";
+        return;
     }
-
-    // Remove a friend connection between two users
-    void FriendSystem::removeFriend(User *user1, User *user2)
+    cout << "Pending friend requests for " << user->getUsername() << ": ";
+    for (User *requester : requests)
     {
-        auto &user1Friends = friends[user1];
-        auto &user2Friends = friends[user2];
-
-        user1Friends.remove(user2);
-        user2Friends.remove(user1);
-
-        cout << "Friend removed: " << user1->getUsername() << " and " << user2->getUsername() << " are no longer friends.\n";
+        cout << requester->getUsername() << " ";
     }
-
-    // Count mutual friends between two users
-    void FriendSystem::mutualFriendsCount(User *user1, User *user2)
+    cout << "\n";
+}
+void FriendSystem::removeFriend(User *user1, User *user2)
+{
+    auto &user1Friends = friends[user1];
+    auto &user2Friends = friends[user2];
+    user1Friends.remove(user2);
+    user2Friends.remove(user1);
+    cout << "Friend removed: " << user1->getUsername() << " and " << user2->getUsername() << " are no longer friends.\n";
+}
+void FriendSystem::mutualFriendsCount(User *user1, User *user2)
+{
+    int count = 0;
+    for (User *friendUser : friends[user1])
     {
-        int count = 0;
-        for (User *friendUser : friends[user1])
+        if (find(friends[user2].begin(), friends[user2].end(), friendUser) != friends[user2].end())
         {
-            if (find(friends[user2].begin(), friends[user2].end(), friendUser) != friends[user2].end())
-            {
-                count++;
-            }
+            count++;
         }
-        cout << "Mutual friends between " << user1->getUsername() << " and " << user2->getUsername() << ": " << count << "\n";
     }
+    cout << "Mutual friends between " << user1->getUsername() << " and " << user2->getUsername() << ": " << count << "\n";
+}
 
-map<User *, list<User *>> &FriendSystem::getFriendsList(){
+map<User *, list<User *>> &FriendSystem::getFriendsList()
+{
     return friends;
 }
 
-// MessagingSystem Class Implementation
-
 void MessagingSystem::sendMessage(User *fromUser, User *toUser, const string &message)
 {
-    // Store the new message in the userMessages queue for the recipient
     userMessages[toUser].emplace(fromUser, message);
-
-    // Archive the message in both users' chat histories
-    chatHistory[fromUser].append(fromUser, toUser, message); // Archive from sender's perspective
-    chatHistory[toUser].append(fromUser, toUser, message);   // Archive from recipient's perspective
+    chatHistory[fromUser].append(fromUser, toUser, message);
+    chatHistory[toUser].append(fromUser, toUser, message);
 }
-
 void MessagingSystem::viewNewMessages(User *user)
 {
     auto it = userMessages.find(user);
@@ -760,7 +664,6 @@ void MessagingSystem::viewNewMessages(User *user)
             auto messagePair = it->second.front();
             User *sender = messagePair.first;
             string message = messagePair.second;
-
             cout << "From " << sender->getUsername() << ": " << message << endl;
             it->second.pop();
         }
@@ -774,50 +677,40 @@ void MessagingSystem::viewNewMessages(User *user)
 void MessagingSystem::viewChatHistory(User *recipient, User *friendUser)
 {
     cout << "Chat history between " << recipient->getUsername()
-              << " and " << friendUser->getUsername() << ":\n";
-
-    // Retrieve chat history for the recipient
+         << " and " << friendUser->getUsername() << ":\n";
     auto recipientIt = chatHistory.find(recipient);
     if (recipientIt != chatHistory.end())
     {
         recipientIt->second.display(recipient, friendUser);
     }
-
-    // If no messages found, indicate it
     if (recipientIt == chatHistory.end())
     {
         cout << "No chat history found between " << recipient->getUsername()
-                  << " and " << friendUser->getUsername() << "!" << endl;
+             << " and " << friendUser->getUsername() << "!" << endl;
     }
 }
 
-// Create Group Function
 void MessagingSystem::createGroup(User *currentUser, UserManagement &userManagement, FriendSystem &friendSystem, MessagingSystem &messagingSystem)
 {
     bool uHaveFriend = friendSystem.viewFriends(currentUser);
     if (!uHaveFriend)
     {
         cout << "You need at least one friend to create a group!" << endl;
-        return; // Exit if no friends are available
+        return;
     }
-
     string groupName;
     cout << "\nEnter the group name: ";
     cin.ignore();
-    getline(cin, groupName); // Allow spaces in group name
-
-    string groupId = "G" + to_string(groups.size() + 1); // Unique group ID
-
+    getline(cin, groupName);
+    string groupId = "G" + to_string(groups.size() + 1);
     set<User *> participants;
-    participants.insert(currentUser); // Add the creator as the first participant
-
+    participants.insert(currentUser);
     char addMore;
     do
     {
         string friendUsername;
         cout << "Enter the username of a friend to add to the group: ";
         cin >> friendUsername;
-
         User *friendUser = userManagement.findUserByUsername(friendUsername);
         if (friendUser && friendUser != currentUser)
         {
@@ -828,32 +721,24 @@ void MessagingSystem::createGroup(User *currentUser, UserManagement &userManagem
         {
             cout << "Invalid username or you cannot add yourself!" << endl;
         }
-
         cout << "Do you want to add another friend? (y/n): ";
         cin >> addMore;
     } while (addMore == 'y' || addMore == 'Y');
-
-    // Create the new group
     Group newGroup(groupId, groupName);
-    newGroup.participants = participants; // Assign participants
-    groups[groupId] = newGroup;           // Store the group by ID
-
+    newGroup.participants = participants;
+    groups[groupId] = newGroup;
     cout << "Group \"" << groupName << "\" created successfully with Group ID: " << groupId << endl;
 }
 
-// Function to send a message to a group
 void sendMessageToGroup(User *currentUser, MessagingSystem &messagingSystem)
 {
     string groupName;
     cout << "Enter the Group Name: ";
     cin.ignore();
     getline(cin, groupName);
-
     string message;
     cout << "Enter your message: ";
     getline(cin, message);
-
-    // Check if user is part of the group before sending the message
     if (messagingSystem.isUserInGroup(groupName, currentUser))
     {
         if (messagingSystem.sendMessageToGroup(currentUser, groupName, message))
@@ -873,21 +758,13 @@ void sendMessageToGroup(User *currentUser, MessagingSystem &messagingSystem)
 bool MessagingSystem::sendMessageToGroup(User *fromUser, const string &groupName, const string &message)
 {
     auto it = find_if(groups.begin(), groups.end(), [&](const auto &pair)
-                           {
-                               return pair.second.groupName == groupName; // Match by group name
-                           });
-
+                      { return pair.second.groupName == groupName; });
     if (it != groups.end())
     {
         Group &group = it->second;
-
-        // Check if the user is part of the group before sending the message
         if (group.isUserInGroup(fromUser))
         {
-            // Add the message to the group's message history
             group.addMessage(fromUser, message);
-
-            // Optionally send the message to the user message queue
             for (User *user : group.participants)
             {
                 if (user != fromUser)
@@ -895,54 +772,46 @@ bool MessagingSystem::sendMessageToGroup(User *fromUser, const string &groupName
                     userMessages[user].push({fromUser, message});
                 }
             }
-            return true; // Message sent successfully
+            return true;
         }
         else
         {
             cout << "You are not a member of the group \"" << groupName << "\"!" << endl;
-            return false; // User not in group
+            return false;
         }
     }
     else
     {
         cout << "Group not found!" << endl;
-        return false; // Message not sent, group not found
+        return false;
     }
 }
+
 bool MessagingSystem::isUserInGroup(const string &groupName, User *user)
 {
     auto it = find_if(groups.begin(), groups.end(), [&](const auto &pair)
-                           {
-                               return pair.second.groupName == groupName; // Match by group name
-                           });
-
+                      { return pair.second.groupName == groupName; });
     if (it != groups.end())
     {
         Group &group = it->second;
-        return group.isUserInGroup(user); // Check if the user is part of the group
+        return group.isUserInGroup(user);
     }
-    return false; // Group not found
+    return false;
 }
+
 void MessagingSystem::viewGroupChatHistory(const string &groupName, User *currentUser)
 {
-    const auto &groups = getGroups(); // Use accessor to get groups
-
+    const auto &groups = getGroups();
     auto it = find_if(groups.begin(), groups.end(), [&](const auto &pair)
-                           {
-                               return pair.second.groupName == groupName; // Match by group name
-                           });
-
+                      { return pair.second.groupName == groupName; });
     if (it != groups.end())
     {
         const Group &group = it->second;
-
-        // Check if the current user is a member of the group
         if (!group.isUserInGroup(currentUser))
         {
             cout << "You are not a member of the group \"" << group.groupName << "\"!" << endl;
-            return; // Exit the function if the user is not a member
+            return;
         }
-
         cout << "Chat history for group \"" << group.groupName << "\":\n";
         group.messageHistory.display2();
     }
@@ -954,51 +823,40 @@ void MessagingSystem::viewGroupChatHistory(const string &groupName, User *curren
 
 bool MessagingSystem::addUserToGroup(const string &groupName, User *user)
 {
-    // Find the group by its name
     auto it = find_if(groups.begin(), groups.end(), [&](const auto &pair)
-                           {
-                               return pair.second.groupName == groupName; // Match by group name
-                           });
-
+                      { return pair.second.groupName == groupName; });
     if (it != groups.end())
     {
-        Group &group = it->second; // Get the group reference
-
-        // Check if the user is already in the group
+        Group &group = it->second;
         if (group.isUserInGroup(user))
         {
             cout << "User is already a member of the group \"" << group.groupName << "\"!" << endl;
-            return false; // User cannot join again
+            return false;
         }
-
-        // Add the user to the group
-        group.addUser(user); // Ensure you have this method defined in the Group class
+        group.addUser(user);
         cout << "User \"" << user->getUsername() << "\" has been added to the group \"" << group.groupName << "\"!" << endl;
-        return true; // User successfully added to the group
+        return true;
     }
     else
     {
         cout << "Group \"" << groupName << "\" not found!" << endl;
-        return false; // Group does not exist
+        return false;
     }
 }
 
 void joinGroup(User *currentUser, MessagingSystem &messagingSystem)
 {
     cout << "Available Groups:\n";
-    const auto &groups = messagingSystem.getGroups(); // Access groups through the accessor
+    const auto &groups = messagingSystem.getGroups();
     for (const auto &groupPair : groups)
     {
         const Group &group = groupPair.second;
-        cout << "Group Name: " << group.groupName << endl; // Displaying group name
+        cout << "Group Name: " << group.groupName << endl;
     }
-
     string groupName;
     cout << "Enter the Group Name to join: ";
-    cin.ignore();                 // Ignore any leftover newline characters in the input buffer
-    getline(cin, groupName); // Allow spaces in the group name
-
-    // Use the new method to add user to group by group name
+    cin.ignore();
+    getline(cin, groupName);
     if (messagingSystem.addUserToGroup(groupName, currentUser))
     {
         cout << "You have joined the group \"" << groupName << "\"!" << endl;
@@ -1014,16 +872,13 @@ void leaveGroup(User *currentUser, MessagingSystem &messagingSystem)
     string groupName;
     cout << "Enter the Group Name to leave: ";
     cin.ignore();
-    getline(cin, groupName); // Allow spaces in the group name
-
-    // Find the group by name
+    getline(cin, groupName);
     const auto &groups = messagingSystem.getGroups();
     auto it = find_if(groups.begin(), groups.end(), [&](const auto &pair)
-                           { return pair.second.groupName == groupName; });
-
+                      { return pair.second.groupName == groupName; });
     if (it != groups.end())
     {
-        const string &groupId = it->first; // Get group ID based on group name
+        const string &groupId = it->first;
         if (messagingSystem.removeUserFromGroup(groupId, currentUser))
         {
             cout << "You have left the group \"" << groupName << "\"!" << endl;
@@ -1047,14 +902,13 @@ bool MessagingSystem::removeUserFromGroup(const string &groupId, User *user)
         Group &group = it->second;
         if (group.isUserInGroup(user))
         {
-            group.removeUser(user); // Remove user from the group
-            return true;            // Successfully removed user
+            group.removeUser(user);
+            return true;
         }
     }
-    return false; // User was not part of the group or group not found
+    return false;
 }
 
-// Function to display the header
 void displayHeader()
 {
     cout << "************************************************************" << endl;
@@ -1076,9 +930,8 @@ void showMenu()
     cout << "1. Sign Up" << endl;
     cout << "2. Log In" << endl;
     cout << "3. Exit" << endl;
-    cout<<endl;
+    cout << endl;
 }
-
 void showUserMenu()
 {
     displayHeader();
@@ -1094,35 +947,31 @@ void showUserMenu()
     cout << "10. Group Messages" << endl;
     cout << "11. Friends" << endl;
     cout << "12. Log Out" << endl;
-    cout<<endl;
+    cout << endl;
 }
 void showFriendMenu()
 {
     cout << "1. View Friends" << endl;
     cout << "2. Suggest Friends using BFS" << endl;
     cout << "3. Suggest Friends using DFS" << endl;
-    cout << "4. View Pending Friend Requests" << endl;
+    cout << "4. View Pending requests" << endl;
     cout << "5. Remove a Friend" << endl;
     cout << "6. Count Mutual Friends" << endl;
-    cout<<endl;
+    cout << endl;
 }
-
 int main()
 {
     UserManagement userManagement;
     PostManagement postManagement;
     FriendSystem friendSystem;
     MessagingSystem messagingSystem;
-
     User *currentUser = nullptr;
-
     while (true)
     {
         showMenu();
         int choice;
-        cout<<"Enter your choice: ";
+        cout << "Enter your choice: ";
         cin >> choice;
-
         if (choice == 1)
         {
             currentUser = userManagement.signUp();
@@ -1131,7 +980,6 @@ int main()
                 cout << "Sign Up successful! You can now log in." << endl;
             }
         }
-
         else if (choice == 2)
         {
             string username, password;
@@ -1139,7 +987,6 @@ int main()
             cin >> username;
             cout << "Enter password: ";
             cin >> password;
-
             currentUser = userManagement.logIn(username, password);
             if (currentUser)
             {
@@ -1148,9 +995,8 @@ int main()
                 {
                     showUserMenu();
                     int userChoice;
-                    cout<<"Enter your choice: ";
+                    cout << "Enter your choice: ";
                     cin >> userChoice;
-
                     if (userChoice == 1)
                     {
                         userManagement.displayProfile(currentUser);
@@ -1158,7 +1004,7 @@ int main()
                     }
                     else if (userChoice == 2)
                     {
-                        userManagement.editProfile(currentUser); // New edit profile functionality
+                        userManagement.editProfile(currentUser);
                         sleep(1);
                     }
                     else if (userChoice == 3)
@@ -1213,41 +1059,38 @@ int main()
                     else if (userChoice == 9)
                     {
                         int messageChoice;
-                        string recipientUsername; // Declare recipientUsername here
-                        string message;           // Declare message here
-                        User *recipient = nullptr;     // Declare recipient here
-                        bool uHaveFriend = false;      // Declare uHaveFriend here
-
+                        string recipientUsername;
+                        string message;
+                        User *recipient = nullptr;
+                        bool uHaveFriend = false;
                         do
                         {
                             cout << "Messaging Menu:\n";
                             cout << "1. View New Messages\n";
                             cout << "2. Send Message\n";
                             cout << "3. View Chat History\n";
-                            cout << "0. Go Back\n"; // Option to exit the messaging menu
-                            cout << "Enter your choice: ";
+                            cout << "0. Go Back\n";
                             cout << "Enter your choice: ";
                             cin >> messageChoice;
-
                             switch (messageChoice)
                             {
-                            case 1: // View New Messages
+                            case 1:
                                 messagingSystem.viewNewMessages(currentUser);
                                 sleep(1);
                                 break;
 
-                            case 2:                                                  // Send Message
-                                uHaveFriend = friendSystem.viewFriends(currentUser); // Now safe to use
+                            case 2:
+                                uHaveFriend = friendSystem.viewFriends(currentUser);
                                 if (uHaveFriend)
                                 {
                                     cout << "Enter recipient's username: ";
-                                    cin >> recipientUsername; // Now safe to use
+                                    cin >> recipientUsername;
                                     recipient = userManagement.findUserByUsername(recipientUsername);
                                     if (recipient)
                                     {
                                         cout << "Enter your message: ";
                                         cin.ignore();
-                                        getline(cin, message); // Now safe to use
+                                        getline(cin, message);
                                         messagingSystem.sendMessage(currentUser, recipient, message);
                                         cout << "Message sent!" << endl;
                                     }
@@ -1263,23 +1106,21 @@ int main()
                                 }
                                 sleep(1);
                                 break;
-
-                            case 3:                                                  // View Chat History
-                                uHaveFriend = friendSystem.viewFriends(currentUser); // Check if the user has friends
+                            case 3:
+                                uHaveFriend = friendSystem.viewFriends(currentUser);
                                 if (uHaveFriend)
                                 {
-                                    string friendUsername; // Declare the variable to hold friend's username
+                                    string friendUsername;
                                     cout << "Enter Friend's username: ";
-                                    cin >> friendUsername; // Get friend's username from input
-
-                                    User *friendUser = userManagement.findUserByUsername(friendUsername); // Find the User object
+                                    cin >> friendUsername;
+                                    User *friendUser = userManagement.findUserByUsername(friendUsername);
                                     if (friendUser)
                                     {
-                                        messagingSystem.viewChatHistory(currentUser, friendUser); // Pass both the current user and the friend
+                                        messagingSystem.viewChatHistory(currentUser, friendUser);
                                     }
                                     else
                                     {
-                                        cout << "Friend not found!" << endl; // Handle case where friend is not found
+                                        cout << "Friend not found!" << endl;
                                     }
                                 }
                                 else
@@ -1288,18 +1129,16 @@ int main()
                                 }
                                 sleep(1);
                                 break;
-
-                            case 0: // Go Back
+                            case 0:
                                 cout << "Exiting messaging menu." << endl;
                                 break;
-
                             default:
                                 cout << "Invalid choice! Please try again." << endl;
                                 break;
                             }
                         } while (messageChoice != 0);
                     }
-                    else if (userChoice == 10) // Group Messaging
+                    else if (userChoice == 10)
                     {
                         int groupChoice;
                         do
@@ -1313,7 +1152,6 @@ int main()
                             cout << "0. Go Back\n";
                             cout << "Enter your choice: ";
                             cin >> groupChoice;
-
                             switch (groupChoice)
                             {
                             case 1:
@@ -1326,8 +1164,9 @@ int main()
                             {
                                 string groupName;
                                 cout << "Enter the Group Name to view chat history: ";
-                                cin >> groupName;
-                                messagingSystem.viewGroupChatHistory(groupName, currentUser); // Correctly pass groupId
+                                cin.ignore();
+                                getline(cin, groupName);
+                                messagingSystem.viewGroupChatHistory(groupName, currentUser);
                                 break;
                             }
                             case 4:
@@ -1345,65 +1184,73 @@ int main()
                             }
                         } while (groupChoice != 0);
                     }
-                    else if(userChoice == 11){
+                    else if (userChoice == 11)
+                    {
                         showFriendMenu();
                         int choice;
                         cin >> choice;
-                            if(choice==1){
+                        if (choice == 1)
+                        {
                             if (friendSystem.viewFriends(currentUser))
                             {
-                            cout << "Friends displayed successfully!" << endl;
-                             sleep(1);
-                            }}
-                            else if(choice==2){
+                                cout << "Friends displayed successfully!" << endl;
+                                sleep(1);
+                            }
+                        }
+                        else if (choice == 2)
+                        {
                             friendSystem.suggestFriendsBFS(currentUser);
-                             sleep(1);
-                            }
-                            else if(choice==3){
+                            sleep(1);
+                        }
+                        else if (choice == 3)
+                        {
                             friendSystem.suggestFriendsDFS(currentUser);
-                             sleep(1);
-                            }
-                            else if(choice==4){
+                            sleep(1);
+                        }
+                        else if (choice == 4)
+                        {
                             friendSystem.displayPendingRequests(currentUser);
-                             sleep(1);
-                            }
-                            else if(choice==5){
+                            sleep(1);
+                        }
+                        else if (choice == 5)
+                        {
                             string removeFriendUsername;
                             cout << "Enter the username of the friend you want to remove: ";
                             cin >> removeFriendUsername;
                             User *removeFriend = userManagement.findUserByUsername(removeFriendUsername);
                             if (removeFriend)
                             {
-                            friendSystem.removeFriend(currentUser, removeFriend);
-                            cout << "Friend removed!" << endl;
-                            sleep(2);
+                                friendSystem.removeFriend(currentUser, removeFriend);
+                                cout << "Friend removed!" << endl;
+                                sleep(2);
                             }
                             else
                             {
-                            cout << "User not found!" << endl;
-                             sleep(1);
+                                cout << "User not found!" << endl;
+                                sleep(1);
                             }
-                            }
-                            else if(choice==6){
+                        }
+                        else if (choice == 6)
+                        {
                             string mutualFriendUsername;
                             cout << "Enter the username to find mutual friends with: ";
                             cin >> mutualFriendUsername;
                             User *mutualFriendUser = userManagement.findUserByUsername(mutualFriendUsername);
                             if (mutualFriendUser)
                             {
-                            friendSystem.mutualFriendsCount(currentUser, mutualFriendUser);
-                             sleep(1);
+                                friendSystem.mutualFriendsCount(currentUser, mutualFriendUser);
+                                sleep(1);
                             }
                             else
                             {
-                            cout << "User not found!" << endl;
-                             sleep(1);
+                                cout << "User not found!" << endl;
+                                sleep(1);
                             }
-                            }
+                        }
                     }
                     else if (userChoice == 12)
                     {
-                        currentUser = nullptr; // Log out
+                        currentUser = nullptr;
                         break;
                     }
                 }
@@ -1415,9 +1262,8 @@ int main()
         }
         else if (choice == 3)
         {
-            break; // Exit
-        }   
+            break;
+        }
     }
-
     return 0;
 }
