@@ -56,7 +56,7 @@
 ### Installation
 1. **Clone the Repository**  
    ```bash
-   git clone https://github.com/SwayamGupta12345/CollegeConnect_in_cpp.git
+   git clone https://github.com/maanya14/CollegeConnect_DS.git
    cd CollegeConnect_in_cpp
    ```
 
@@ -112,4 +112,4 @@
 ---
 
 ## Contact
-For queries, suggestions, or contributions, reach out at **[swayamsam2005@gmail.com](mailto:swayamsam2005@gmail.com)**.
+For queries, suggestions, or contributions, reach out at **[maanya.g14@gmail.com](mailto:maanya.g14@gmail.com)**.
